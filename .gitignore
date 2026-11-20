@@ -7,8 +7,6 @@
 *.userosscache
 *.sln.docstates
 *.userprefs
-
-## User-specific files
 *.rsuser
 
 ## Build results
@@ -18,8 +16,23 @@ x64/
 x86/
 [Aa]rm/
 [Aa]rm64/
+*.binlog
 
-## SQLite database files if any local dev DB created
+## Test Results and Coverage
+TestResults/
+[Tt]est[Rr]esults/
+*.msCoverageSourceRootsMapping*
+*CoverletSourceRootsMapping*
+
+## IDE & Editor folders
+.idea/
+.vscode/
+
+## SQLite & Local DB files
 *.db
 *.sqlite
 *.sqlite3
+
+## OS generated files
+.DS_Store
+Thumbs.db

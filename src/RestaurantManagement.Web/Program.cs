@@ -15,11 +15,30 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Host.UseSerilog();
 
-// Add DbContext — SQL Server with Windows Authentication
+// MySQL 8.0+ Connection String
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? "Server=localhost;Port=3306;Database=RestaurantManagementDb;User ID=root;Password=root;TreatTinyAsBoolean=true;";
+
+// Register MySQL DbContext with resilience and connection retry
 builder.Services.AddDbContext<RestaurantDbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    var serverVersion = new MySqlServerVersion(new Version(8, 0, 36));
+    options.UseMySql(connectionString, serverVersion, mySqlOptions =>
+    {
+        mySqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(5),
+            errorNumbersToAdd: null);
+        mySqlOptions.CommandTimeout(60);
+    });
     options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+});
+
+// Register MySQL Database Helper for direct ADO.NET and Stored Procedure calls
+builder.Services.AddSingleton<IDatabaseHelper>(sp =>
+{
+    var logger = sp.GetService<ILogger<MySqlDbHelper>>();
+    return new MySqlDbHelper(connectionString, logger);
 });
 
 // Register Repositories and Services
@@ -57,12 +76,32 @@ builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// Apply EF Core migrations & seed data on startup
+// Automated MySQL Database Initialization & Versioned Migrations
 using (var scope = app.Services.CreateScope())
 {
+    var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+    var initLogger = loggerFactory.CreateLogger<DatabaseInitializer>();
     var dbContext = scope.ServiceProvider.GetRequiredService<RestaurantDbContext>();
-    dbContext.Database.Migrate(); // Creates DB if not exists + runs all pending migrations
-    DbInitializer.SeedData(dbContext);
+
+    try
+    {
+        var initializer = DatabaseInitializer.FromConfiguration(builder.Configuration, initLogger);
+        var initResult = initializer.InitializeAsync().GetAwaiter().GetResult();
+
+        if (initResult.Success)
+        {
+            initLogger.LogInformation("Database verified successfully. Proceeding with application seed data.");
+            DbInitializer.SeedData(dbContext);
+        }
+        else
+        {
+            initLogger.LogWarning("Automated initialization encountered an issue: {Message}", initResult.Message);
+        }
+    }
+    catch (Exception ex)
+    {
+        initLogger.LogError(ex, "Unexpected error during database initialization: {Message}", ex.Message);
+    }
 }
 
 if (!app.Environment.IsDevelopment())

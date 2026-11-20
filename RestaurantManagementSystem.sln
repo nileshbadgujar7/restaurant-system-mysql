@@ -18,6 +18,21 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D1C8F7E4-5A1
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{D1C8F7E4-5A1B-4B6A-91C2-3E8F5A1B4B6B}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database", "Database", "{B3A6284F-66E8-4F15-8422-B9CD670F6C92}"
+	ProjectSection(SolutionItems) = preProject
+		Database\01_CreateDatabase.sql = Database\01_CreateDatabase.sql
+		Database\02_CreateTables.sql = Database\02_CreateTables.sql
+		Database\03_CreateIndexes.sql = Database\03_CreateIndexes.sql
+		Database\04_CreateStoredProcedures.sql = Database\04_CreateStoredProcedures.sql
+		Database\05_CreateFunctions.sql = Database\05_CreateFunctions.sql
+		Database\06_CreateViews.sql = Database\06_CreateViews.sql
+		Database\07_CreateTriggers.sql = Database\07_CreateTriggers.sql
+		Database\08_InsertDefaultData.sql = Database\08_InsertDefaultData.sql
+		Database\09_DatabaseVersion.sql = Database\09_DatabaseVersion.sql
+		Database\10_FullDatabaseSetup.sql = Database\10_FullDatabaseSetup.sql
+		Database\README.md = Database\README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

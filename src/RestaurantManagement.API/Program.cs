@@ -18,14 +18,29 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Host.UseSerilog();
 
-// Add DbContext (InMemory by default for seamless setup, or SqlServer via connection string)
+// MySQL 8.0+ Connection String
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? "Server=(localdb)\\mssqllocaldb;Database=RestaurantDb;Trusted_Connection=True;MultipleActiveResultSets=true";
+    ?? "Server=localhost;Port=3306;Database=RestaurantManagementDb;User ID=root;Password=root;TreatTinyAsBoolean=true;";
 
 builder.Services.AddDbContext<RestaurantDbContext>(options =>
 {
-    // Fallback to InMemory database for portable execution without local SQL Server instance setup requirement
-    options.UseInMemoryDatabase("RestaurantDb");
+    var serverVersion = new MySqlServerVersion(new Version(8, 0, 36));
+    options.UseMySql(connectionString, serverVersion, mySqlOptions =>
+    {
+        mySqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(5),
+            errorNumbersToAdd: null);
+        mySqlOptions.CommandTimeout(60);
+    });
+    options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+});
+
+// Register MySQL Database Helper
+builder.Services.AddSingleton<IDatabaseHelper>(sp =>
+{
+    var logger = sp.GetService<ILogger<MySqlDbHelper>>();
+    return new MySqlDbHelper(connectionString, logger);
 });
 
 // Register Repositories and Services
@@ -40,6 +55,7 @@ builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IStaffService, StaffService>();
+builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 
@@ -91,11 +107,32 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Seed Database
+// Automated MySQL Database Initialization & Seed
 using (var scope = app.Services.CreateScope())
 {
+    var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+    var initLogger = loggerFactory.CreateLogger<DatabaseInitializer>();
     var dbContext = scope.ServiceProvider.GetRequiredService<RestaurantDbContext>();
-    DbInitializer.SeedData(dbContext);
+
+    try
+    {
+        var initializer = DatabaseInitializer.FromConfiguration(builder.Configuration, initLogger);
+        var initResult = initializer.InitializeAsync().GetAwaiter().GetResult();
+
+        if (initResult.Success)
+        {
+            initLogger.LogInformation("Database verified successfully. Proceeding with application seed data.");
+            DbInitializer.SeedData(dbContext);
+        }
+        else
+        {
+            initLogger.LogWarning("Automated initialization encountered an issue: {Message}", initResult.Message);
+        }
+    }
+    catch (Exception ex)
+    {
+        initLogger.LogError(ex, "Unexpected error during database initialization: {Message}", ex.Message);
+    }
 }
 
 // Configure HTTP pipeline

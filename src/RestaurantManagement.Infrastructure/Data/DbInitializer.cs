@@ -9,58 +9,55 @@ public static class DbInitializer
 {
     public static void SeedData(RestaurantDbContext context)
     {
-        // Ensure new tables exist in SQL Server if migrating incrementally
+        // Ensure new tables exist in MySQL if migrating incrementally
         try
         {
-            context.Database.ExecuteSqlRaw(@"
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'EmployeeLedgers')
-                BEGIN
-                    CREATE TABLE [EmployeeLedgers] (
-                        [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                        [EmployeeId] INT NOT NULL,
-                        [TransactionDate] DATETIME2 NOT NULL,
-                        [TransactionType] NVARCHAR(50) NOT NULL,
-                        [Amount] DECIMAL(18,2) NOT NULL,
-                        [PaymentMethod] NVARCHAR(50) NOT NULL,
-                        [ReferenceNumber] NVARCHAR(100) NOT NULL,
-                        [Notes] NVARCHAR(MAX) NOT NULL,
-                        [RecordedBy] NVARCHAR(100) NOT NULL,
-                        [CreatedAt] DATETIME2 NOT NULL,
-                        [UpdatedAt] DATETIME2 NULL,
-                        [IsDeleted] BIT NOT NULL
-                    );
-                END;
+            if (context.Database.IsRelational())
+            {
+                context.Database.ExecuteSqlRaw(@"
+                    CREATE TABLE IF NOT EXISTS `EmployeeLedgers` (
+                        `Id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                        `EmployeeId` INT NOT NULL,
+                        `TransactionDate` DATETIME(6) NOT NULL,
+                        `TransactionType` VARCHAR(50) NOT NULL,
+                        `Amount` DECIMAL(18,2) NOT NULL,
+                        `PaymentMethod` VARCHAR(50) NOT NULL,
+                        `ReferenceNumber` VARCHAR(100) NOT NULL,
+                        `Notes` LONGTEXT NOT NULL,
+                        `RecordedBy` VARCHAR(100) NOT NULL,
+                        `CreatedAt` DATETIME(6) NOT NULL,
+                        `UpdatedAt` DATETIME(6) NULL,
+                        `IsDeleted` TINYINT(1) NOT NULL DEFAULT 0
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PayrollRecords')
-                BEGIN
-                    CREATE TABLE [PayrollRecords] (
-                        [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                        [EmployeeId] INT NOT NULL,
-                        [Month] INT NOT NULL,
-                        [Year] INT NOT NULL,
-                        [BaseSalary] DECIMAL(18,2) NOT NULL,
-                        [TotalDaysInMonth] INT NOT NULL,
-                        [PresentDays] DECIMAL(18,2) NOT NULL,
-                        [HalfDays] DECIMAL(18,2) NOT NULL,
-                        [PaidLeaveDays] DECIMAL(18,2) NOT NULL,
-                        [UnpaidLeaveDays] DECIMAL(18,2) NOT NULL,
-                        [DailyRate] DECIMAL(18,2) NOT NULL,
-                        [GrossSalary] DECIMAL(18,2) NOT NULL,
-                        [AdvanceDeducted] DECIMAL(18,2) NOT NULL,
-                        [OtherDeductions] DECIMAL(18,2) NOT NULL,
-                        [Bonus] DECIMAL(18,2) NOT NULL,
-                        [NetSalary] DECIMAL(18,2) NOT NULL,
-                        [Status] NVARCHAR(50) NOT NULL,
-                        [PaymentDate] DATETIME2 NULL,
-                        [PaymentMethod] NVARCHAR(50) NOT NULL,
-                        [Notes] NVARCHAR(MAX) NOT NULL,
-                        [ProcessedBy] NVARCHAR(100) NOT NULL,
-                        [CreatedAt] DATETIME2 NOT NULL,
-                        [UpdatedAt] DATETIME2 NULL,
-                        [IsDeleted] BIT NOT NULL
-                    );
-                END;
-            ");
+                    CREATE TABLE IF NOT EXISTS `PayrollRecords` (
+                        `Id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                        `EmployeeId` INT NOT NULL,
+                        `Month` INT NOT NULL,
+                        `Year` INT NOT NULL,
+                        `BaseSalary` DECIMAL(18,2) NOT NULL,
+                        `TotalDaysInMonth` INT NOT NULL,
+                        `PresentDays` DECIMAL(18,2) NOT NULL,
+                        `HalfDays` DECIMAL(18,2) NOT NULL,
+                        `PaidLeaveDays` DECIMAL(18,2) NOT NULL,
+                        `UnpaidLeaveDays` DECIMAL(18,2) NOT NULL,
+                        `DailyRate` DECIMAL(18,2) NOT NULL,
+                        `GrossSalary` DECIMAL(18,2) NOT NULL,
+                        `AdvanceDeducted` DECIMAL(18,2) NOT NULL,
+                        `OtherDeductions` DECIMAL(18,2) NOT NULL,
+                        `Bonus` DECIMAL(18,2) NOT NULL,
+                        `NetSalary` DECIMAL(18,2) NOT NULL,
+                        `Status` VARCHAR(50) NOT NULL,
+                        `PaymentDate` DATETIME(6) NULL,
+                        `PaymentMethod` VARCHAR(50) NOT NULL,
+                        `Notes` LONGTEXT NOT NULL,
+                        `ProcessedBy` VARCHAR(100) NOT NULL,
+                        `CreatedAt` DATETIME(6) NOT NULL,
+                        `UpdatedAt` DATETIME(6) NULL,
+                        `IsDeleted` TINYINT(1) NOT NULL DEFAULT 0
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                ");
+            }
         }
         catch
         {

@@ -9,4 +9,17 @@
   <Folder Name="/tests/">
     <Project Path="tests/RestaurantManagement.Tests/RestaurantManagement.Tests.csproj" />
   </Folder>
+  <Folder Name="/Database/">
+    <File Path="Database/01_CreateDatabase.sql" />
+    <File Path="Database/02_CreateTables.sql" />
+    <File Path="Database/03_CreateIndexes.sql" />
+    <File Path="Database/04_CreateStoredProcedures.sql" />
+    <File Path="Database/05_CreateFunctions.sql" />
+    <File Path="Database/06_CreateViews.sql" />
+    <File Path="Database/07_CreateTriggers.sql" />
+    <File Path="Database/08_InsertDefaultData.sql" />
+    <File Path="Database/09_DatabaseVersion.sql" />
+    <File Path="Database/10_FullDatabaseSetup.sql" />
+    <File Path="Database/README.md" />
+  </Folder>
 </Solution>
